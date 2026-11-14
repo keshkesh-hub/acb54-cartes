@@ -1,1 +1,334 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <title>Administration - ACB-54 ADELSAN</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f4f5;
+      color: #18181b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: white;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 10px 35px rgba(0,0,0,.12);
+      border: 1px solid #e4e4e7;
+    }
+
+    .login-header {
+      background: #09090b;
+      color: white;
+      text-align: center;
+      padding: 30px 25px;
+      border-bottom: 5px solid #facc15;
+    }
+
+    .login-header h1 {
+      margin: 0;
+      font-size: 25px;
+    }
+
+    .login-header p {
+      margin: 8px 0 0;
+      color: #d4d4d8;
+      font-size: 14px;
+    }
+
+    .login-body {
+      padding: 30px;
+    }
+
+    .lock {
+      text-align: center;
+      font-size: 42px;
+      margin-bottom: 15px;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 0 0 25px;
+      font-size: 21px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #d4d4d8;
+      border-radius: 10px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #facc15;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      background: #facc15;
+      color: #111;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    #message {
+      margin-top: 15px;
+      font-size: 14px;
+      text-align: center;
+      min-height: 20px;
+    }
+
+    .error {
+      color: #dc2626;
+    }
+
+    .success {
+      color: #15803d;
+    }
+
+    .back {
+      display: block;
+      margin-top: 25px;
+      text-align: center;
+      color: #52525b;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .back:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="login-card">
+
+    <div class="login-header">
+      <h1>ACB-54 ADELSAN</h1>
+      <p>Espace sécurisé</p>
+    </div>
+
+    <div class="login-body">
+
+      <div class="lock">🔐</div>
+
+      <h2>Espace administrateur</h2>
+
+      <form id="loginForm">
+
+        <label for="password">
+          Mot de passe
+        </label>
+
+        <input
+          type="password"
+          id="password"
+          placeholder="Votre mot de passe"
+          autocomplete="current-password"
+          required
+        >
+
+        <button type="submit" id="loginButton">
+          SE CONNECTER
+        </button>
+
+      </form>
+
+      <div id="message"></div>
+
+      <a href="index.html" class="back">
+        ← Retour à l'accueil
+      </a>
+
+    </div>
+
+  </div>
+
+
+<script>
+
+  /*
+   * À REMPLACER PAR LES INFORMATIONS
+   * DE TON PROJET SUPABASE
+   */
+
+  const SUPABASE_URL =
+    "https://ypjbftfeuibjrapsdaxx.supabase.co/rest/v1/URL";
+
+  const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_VWObAmpAypBCdY_kll3BHA_ENHKHzTo";
+
+
+  /*
+   * IMPORTANT :
+   * ta fonction s'appelle visuellement admin-login,
+   * mais son URL technique peut encore être
+   * /smooth-endpoint car nous avons renommé
+   * la fonction après sa création.
+   */
+
+  const FUNCTION_SLUG =
+    "smooth-endpoint";
+
+
+  const form =
+    document.getElementById("loginForm");
+
+  const passwordInput =
+    document.getElementById("password");
+
+  const button =
+    document.getElementById("loginButton");
+
+  const message =
+    document.getElementById("message");
+
+
+  form.addEventListener("submit", async (event) => {
+
+    event.preventDefault();
+
+    const password = passwordInput.value;
+
+    message.textContent = "";
+    message.className = "";
+
+    button.disabled = true;
+    button.textContent = "CONNEXION...";
+
+
+    try {
+
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/${FUNCTION_SLUG}`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_PUBLISHABLE_KEY,
+            "Authorization":
+              `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+          },
+
+          body: JSON.stringify({
+            password: password
+          })
+        }
+      );
+
+
+      const result = await response.json();
+
+
+      if (!response.ok) {
+
+        message.textContent =
+          result.error || "Mot de passe incorrect.";
+
+        message.className = "error";
+
+        passwordInput.value = "";
+        passwordInput.focus();
+
+        return;
+      }
+
+
+      /*
+       * On enregistre temporairement
+       * la session Supabase dans le navigateur.
+       */
+
+      sessionStorage.setItem(
+        "acb54_access_token",
+        result.access_token
+      );
+
+      sessionStorage.setItem(
+        "acb54_refresh_token",
+        result.refresh_token
+      );
+
+
+      message.textContent =
+        "Connexion réussie ✓";
+
+      message.className = "success";
+
+
+      /*
+       * Plus tard cette destination deviendra
+       * ton véritable espace administrateur.
+       */
+
+      setTimeout(() => {
+
+        window.location.href =
+          "index.html?admin=1";
+
+      }, 700);
+
+
+    } catch (error) {
+
+      console.error(error);
+
+      message.textContent =
+        "Impossible de contacter le serveur.";
+
+      message.className = "error";
+
+    }
+
+    finally {
+
+      button.disabled = false;
+
+      button.textContent =
+        "SE CONNECTER";
+
+    }
+
+  });
+
+</script>
+
+</body>
+</html>
